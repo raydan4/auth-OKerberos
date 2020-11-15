@@ -53,7 +53,11 @@ def root():
 
 
 if __name__ == "__main__":
-    from os import urandom
-    app.secret_key = urandom(16)
-    print(app.secret_key)
+    try:
+        import config
+        app.secret_key = config.key
+    except Exception:
+        from os import urandom
+        app.secret_key = urandom(16)
+        print(app.secret_key)
     app.run()
