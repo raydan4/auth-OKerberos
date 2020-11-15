@@ -1,22 +1,12 @@
 import aiohttp
-from fastapi import FastAPI, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from fastapi import FastAPI
 from base64 import b64encode
 import ujson
 from Crypto.Hash import SHA256
-
 import crypto
 from config import key
 
 app = FastAPI()
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-class User(BaseModel):
-    username: str
-    password: str
 
 
 async def make_request(url: str, username: str, password: str) -> dict:
@@ -35,13 +25,13 @@ async def read_root():
 
 
 @app.get("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(username: str, password: str):
     try:
         url = "http://validate.php"
-        resp = await make_request(url, form_data.username, form_data.password)
+        resp = await make_request(url, username, password)
         valid, token = resp["valid"], resp["token"]
         h = SHA256.new()
-        h.update(form_data.password.encode("UTF-8"))
+        h.update(password.encode("UTF-8"))
         hash = h.hexdigest()
         resp = str(crypto.aes256_encrypt(key, bytes(token)))
         return b64encode(
