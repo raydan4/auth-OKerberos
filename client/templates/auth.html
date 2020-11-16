@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <title>Authentication OAuth Lab</title>
+ 
+    <link href="../static/main.css" rel="stylesheet">
+    <link href="../static/bootstrap.css" rel="stylesheet">
+ 
+ 
+</head>
+ 
+<body>
+ 
+    <div class="container">
+        <div class="header">
+            <nav>
+                <ul class="nav nav-pills pull-right">
+                    <li role="presentation" class="active"><a href="#">Home</a>
+                    </li>
+                    <li role="presentation"><a href="showSignUp">Send Credentials</a>
+                    </li>
+                </ul>
+            </nav>
+            <h3 class="text-muted">Python Flask App</h3>
+        </div>
+	    <div id='info_section'>
+	    	{% for data in data %}
+		<p>{{ data }}</p>
+		{% endfor %}
+	    </div>
+        </div>
+ 
+
+ 
+        <footer class="footer">
+            <p>&copy; Caffeine and Prayer 2020</p>
+        </footer>
+ 
+    </div>
+</body>
+ 
+</html>
