@@ -85,8 +85,8 @@ def test():
     #temp = b64encode(crypto.aes256_encrypt('{"auth": "fail", "token": ""}'.encode('UTF-8'), hash))
     #print(f'encoded: {temp}')
 
-if __name__ == '__main__':
-    test()
+#if __name__ == '__main__':
+#    test()
     #   import uvicorn
 
     #   uvicorn.run("server:app", host="127.0.0.1", port=5000, log_level="info", reload=True)
