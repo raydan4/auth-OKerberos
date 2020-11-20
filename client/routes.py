@@ -1,5 +1,8 @@
 from flask import Flask, render_template, json, request
 import requests, logging, base64
+from Crypto.Hash import SHA256
+from crypt import aes256_decrypt
+
 
 app = Flask(__name__)
 
@@ -34,7 +37,9 @@ def signUp():
         # Decode Response
         encrypted_response = base64.b64decode(encoded_response)
         # Decrypt Response
-        hashed_password = SHA256(password) 
+        h = SHA256.new()
+        h.update(password.encode('utf-8'))
+        hashed_password = h.digest()
         decrypted_response = aes256_decrypt(encrypted_response, hashed_password)
         # Send authorized request to applicaiton server if things are good
         content = requests.post(appServer, json=decrypted_response, headers={"Content-Type":"application/json"})
