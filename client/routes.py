@@ -30,7 +30,7 @@ def signUp():
     if username and password:
         # Send user/pass to server
         blob = { "username": username, "password": password }
-        response = requests.post(authServer, json=blob, headers={"Content-Type": "application/json"}, verify=False)
+        response = requests.post(authServer, json=blob, headers={"Content-Type": "application/json"})
         print("** Credentials were sent to authServer **")
 
         # Get request from AuthServer
@@ -45,30 +45,11 @@ def signUp():
         print(decrypted_response)
         # Send authorized request to applicaiton server if things are good
         content = requests.post(appServer, json=decrypted_response, headers={"Content-Type":"application/json"})
-        print(content.text)
         print("** Token was sent to appServer **") 
 
         req = json.loads(content.text)
-        if req["message"] == "AUTHORIZED":
-            data = """
-            <div class="jumbotron" style="background-color: #77dd77;">
-            <h1>OAuth SUCCESS!</h1>
-            <p class="lead"></p>
-            <p>You have been granted access to the application</p>
-            <code>{"message":"AUTHORIZED","status":200}</code>
-            </div>
-            """
-            return render_template("auth.html", data=data)
-        elif req["message"] == "UNAUTHORIZED":
-            data = """
-            <div class="jumbotron" style="background-color: #ff6961;">
-            <h1>OAuth FAILURE</h1>
-            <p class="lead"></p>
-            <p>You have been denied access to the application</p>
-            <code>{"message":"UNAUTHORIZED","status":403}</code>
-            </div>
-            """
-            return render_template("auth.html", data=data)
+        auth = req["message"] == "AUTHORIZED"
+        return render_template("auth.html", auth=auth, data=content.text)
 
 if __name__ == "__main__":
     app.run()
