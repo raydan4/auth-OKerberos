@@ -8,6 +8,8 @@ from starlette.responses import StreamingResponse
 import io
 import crypto
 from config import key
+import certifi
+import ssl
 
 
 class User(BaseModel):
@@ -21,7 +23,9 @@ app = FastAPI()
 async def make_request(url: str, username: str, password: str) -> dict:
     timeout = aiohttp.ClientTimeout(total=35)
     data = {"grant_type": "client_credentials"}
-    async with aiohttp.ClientSession(timeout=timeout, auth=aiohttp.BasicAuth(username, password)) as session:
+    sslcontext = ssl.create_default_context(cafile=certifi.where())
+    async with aiohttp.ClientSession(timeout=timeout, auth=aiohttp.BasicAuth(username, password),
+                                     connector=aiohttp.TCPConnector(ssl=sslcontext)) as session:
         async with session.post(url, data=data) as resp:
             text = await resp.text("UTF-8")
             resp = ujson.loads(text)
@@ -42,24 +46,36 @@ async def login(user: User):
         print(f'password: ', user.password)
         url = "https://auth-oauth.silentnoise.fail/token.php"
         resp = await make_request(url, user.username, user.password)
-        valid = True if "success" in resp else False
+        valid = True if "access_token" in resp else False
         token = resp["access_token"] if valid else "invalid"
         print(f'valid: {valid} and token: {token}')
         h = SHA256.new()
-        h.update(user.password.encode("UTF-8"))
-        pass_hash = h.hexdigest()
-        resp = str(crypto.aes256_encrypt(key, bytes(token)))
+        print(f'{user}: {user.password} and {type(user.password)} ')
+        h.update(user.password.encode('utf-8'))
+        pass_hash = h.digest()
+        print("pass_hash: ", pass_hash)
+        resp = b64encode(crypto.aes256_encrypt(token.encode("UTF-8"), key)).decode("UTF-8")
+        print(f'token_resp: ', resp)
         return b64encode(
-            crypto.aes256_encrypt(pass_hash,
-                                  f'{{"auth": {"fail" if not valid else "success"}, "token": {resp if valid else ""}}}'.encode(
-                                      "UTF-8")))
+            crypto.aes256_encrypt(f'{{"auth": "{"fail" if not valid else "success"}", "token": "{resp if valid else ""}"}}'.encode(
+                                      "UTF-8"), pass_hash))
     except Exception as e:
         print(f'An exception has occurred: {e}')
-        return [{"error": e}]
+        import traceback; traceback.print_exc()
+        return {"error": e}
 
 
 def test():
-    pass
+    temp = "N6Ai830UK+QsZKOBxvBWmhBL61arQp5GGcIJfgTI4p1mglbySUYO2lIIavLQAnNiVXsOLdJ7ShA2Aor6ybbFQiccxc+Ms3tSvQftvD+9h89el/sjcENsJgDltZ9twdQiy5mMppMkEU+Hht/DsvtNw80byHg8kxkDxUwwQqzinIWL7myTqIFPeCWKauEBYX4EtlRbKMeoKWV97VzpvBm4wu3ErEYHqVpTs5YvUozIxKk6wtRU66yL00mQ5R853bP5DZj9NNN0bx0MB1hzbuTpx+5wCCI8dSaPqC/EK4NZ1eM="
+    h = SHA256.new()
+    h.update("testpass".encode('utf-8'))
+    pass_hash = h.digest()
+    x = b64decode(temp)
+    decrypted_response = crypto.aes256_decrypt(x, pass_hash)
+    print(decrypted_response.decode("UTF-8"))
+    import json
+    ok = json.loads(decrypted_response.decode("UTF-8"))
+    print(ok["token"])
     # token =
     # resp = str(crypto.aes256_encrypt(key, bytes(token)))
     #h = SHA256.new()
@@ -69,7 +85,8 @@ def test():
     #temp = b64encode(crypto.aes256_encrypt('{"auth": "fail", "token": ""}'.encode('UTF-8'), hash))
     #print(f'encoded: {temp}')
 
-# if __name__ == '__main__':
-#   import uvicorn
+if __name__ == '__main__':
+    test()
+    #   import uvicorn
 
-#   uvicorn.run("server:app", host="127.0.0.1", port=5000, log_level="info", reload=True)
+    #   uvicorn.run("server:app", host="127.0.0.1", port=5000, log_level="info", reload=True)
