@@ -3,6 +3,8 @@ from functools import wraps
 from crypt import aes256_decrypt
 from base64 import b64decode
 from json import loads
+from requests import post
+from urllib.parse import urljoin
 
 
 def gen_response(code, message):
@@ -15,10 +17,19 @@ def gen_response(code, message):
 
 
 def validate_token(token):
+    # Decode and decrypt token
     raw = b64decode(token)
     message = aes256_decrypt(raw, app.secret_key)
-    json = loads(message)
-    return True
+    token_json = loads(message)
+    # Extract token
+    token = token_json.get('access_token')
+    # Post token to verification endpoint
+    verification_response = post(app.oauth_endpoint, data={'access_token': token})
+    verification_json = verification_response.json()
+    if verification_json.get('success') == True:
+        return True
+    else:
+        return False
 
 
 def auth_required(f):
@@ -46,7 +57,7 @@ def auth_required(f):
 app = Flask(__name__)
 
 
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['POST', 'GET'])
 @auth_required
 def root():
     return gen_response(200, "AUTHORIZED")
@@ -54,10 +65,13 @@ def root():
 
 if __name__ == "__main__":
     try:
+        needed = "config file"
         import config
-        app.secret_key = config.key
+        needed = "KEY"
+        app.secret_key = config.KEY
+        needed = "OAUTH_URL and OAUTH_VALIDATION_ENDPOINT"
+        app.oauth_endpoint = urljoin(config.OAUTH_URL, config.OAUTH_VALIDATION_ENDPOINT)
     except Exception:
-        from os import urandom
-        app.secret_key = urandom(16)
-        print(app.secret_key)
+        print(f'FATAL: missing {needed}')
+        exit(1)
     app.run()
