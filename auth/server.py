@@ -20,8 +20,8 @@ app = FastAPI()
 
 async def make_request(url: str, username: str, password: str) -> dict:
     timeout = aiohttp.ClientTimeout(total=35)
-    data = {"username": username, "password": password}
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+    data = {"grant_type": "client_credentials"}
+    async with aiohttp.ClientSession(timeout=timeout, auth=aiohttp.BasicAuth(username, password)) as session:
         async with session.post(url, data=data) as resp:
             text = await resp.text("UTF-8")
             resp = ujson.loads(text)
@@ -40,10 +40,11 @@ async def login(user: User):
     try:
         print(f'username: ', user.username)
         print(f'password: ', user.password)
-        # url = "http://validate.php"
-        url = "https://auth-oauth.silentnoise.fail"
+        url = "https://auth-oauth.silentnoise.fail/token.php"
         resp = await make_request(url, user.username, user.password)
-        valid, token = resp["valid"], resp["token"]
+        valid = True if "success" in resp else False
+        token = resp["access_token"] if valid else "invalid"
+        print(f'valid: {valid} and token: {token}')
         h = SHA256.new()
         h.update(user.password.encode("UTF-8"))
         pass_hash = h.hexdigest()
@@ -58,14 +59,15 @@ async def login(user: User):
 
 
 def test():
+    pass
     # token =
     # resp = str(crypto.aes256_encrypt(key, bytes(token)))
-    h = SHA256.new()
-    h.update("password".encode("UTF-8"))
-    hash = h.digest()
+    #h = SHA256.new()
+    #h.update("password".encode("UTF-8"))
+    #hash = h.digest()
     # resp = str(crypto.aes256_encrypt(key, bytes(token)))
-    temp = b64encode(crypto.aes256_encrypt('{"auth": "fail", "token": ""}'.encode('UTF-8'), hash))
-    print(f'encoded: {temp}')
+    #temp = b64encode(crypto.aes256_encrypt('{"auth": "fail", "token": ""}'.encode('UTF-8'), hash))
+    #print(f'encoded: {temp}')
 
 # if __name__ == '__main__':
 #   import uvicorn
