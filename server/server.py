@@ -46,7 +46,7 @@ def auth_required(f):
             return f()
         except AssertionError:
             return gen_response(403, "UNAUTHORIZED")
-        except ValueError:
+        except ValueError, TypeError:
             return gen_response(400, "INVALID TOKEN")
     return decorator
 
